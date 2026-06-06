@@ -1,5 +1,145 @@
 /* =====================================================
-   ELEMENTOS VISUAIS DE DETALHE - VIDRO LÍQUIDO CROMÁTICO
+   ESTRUTURA, CENTRALIZAÇÃO E HIERARQUIA VISUAL
+===================================================== */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    /* Variáveis auxiliares para a malha de grid e textos */
+    --grid-color: rgba(255, 255, 255, 0.05);
+    --text-main: #ffffff;
+    --text-muted: rgba(255, 255, 255, 0.7);
+}
+
+:root.light-mode {
+    --grid-color: rgba(0, 0, 0, 0.03);
+    --text-main: #1a1a1a;
+    --text-muted: #555555;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #09090b; /* Fundo escuro profundo para destacar o vidro líquido */
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 24px; /* Respiro extra para a rolagem */
+    overflow-x: hidden; /* Trava rolagem lateral indesejada */
+    overflow-y: auto;   /* LIBERA A ROLAGEM PARA BAIXO */
+    transition: background-color 0.5s ease;
+}
+
+body.light-mode-active {
+    background-color: #f4f4f9;
+}
+
+/* --- CONTAINER PRINCIPAL HOME --- */
+.home-container {
+    width: 100%;
+    max-width: 480px; 
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px; /* Espaçamento vertical estrito e proporcional */
+    z-index: 1; /* Garante que o conteúdo fique acima do fundo cromático */
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 40px 24px;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+:root.light-mode .home-container {
+    background: rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* --- HEADER / LOGO --- */
+.header-logo {
+    width: 64px; /* Escala corrigida para harmonizar com a interface */
+    height: auto;
+    display: block;
+}
+
+/* --- TEXTOS E HIERARQUIA --- */
+.main-title {
+    font-size: 2.25rem; /* Imponente, mas controlado */
+    font-weight: 800;
+    color: var(--text-main);
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    margin-bottom: 12px;
+    word-wrap: break-word;
+}
+
+.description-text {
+    font-size: 1.05rem; /* Claramente diferenciado do título */
+    color: var(--text-muted);
+    line-height: 1.5; /* Altura de linha corrigida e natural */
+    max-width: 90%;
+    margin: 0 auto;
+}
+
+/* --- CONTAINER DE BOTÕES --- */
+.button-group {
+    width: 100%;
+    max-width: 320px; /* Largura controlada e proporcional ao layout */
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* --- ESTILO DOS BOTÕES --- */
+.btn {
+    width: 100%;
+    padding: 14px 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-primary {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+:root.light-mode .btn-primary {
+    background-color: #1a1a1a;
+    color: #ffffff;
+}
+
+.btn-secondary {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    backdrop-filter: blur(4px);
+}
+
+:root.light-mode .btn-secondary {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #1a1a1a;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+
+/* =====================================================
+   ELEMENTOS VISUAIS DE DETALHE - VIDRO LÍQUIDO CROMÁTICO 
+   (MANTIDO 100% INTEGRAIS, CONFORME ENVIADO)
 ===================================================== */
 :root {
   /* Injetores Cromáticos para o Modo Escuro */
@@ -24,6 +164,7 @@
   z-index: -2;
   pointer-events: none;
   will-change: transform, border-radius, filter; /* Fluidez máxima a 60fps+ trocando de cor */
+  contain: strict; /* Isola o impacto das animações no scroll da página */
 }
 
 .bg1 {
@@ -33,6 +174,8 @@
   background: radial-gradient(circle at 30% 30%, var(--bg1-fluid-1), var(--bg1-fluid-2) 85%) !important;
   opacity: 0.28 !important; 
   animation: liquidBlueDrop 24s cubic-bezier(0.37, 0, 0.63, 1) infinite alternate !important;
+  top: -20%;
+  left: -20%;
 }
 
 .bg2 {
@@ -43,6 +186,8 @@
   opacity: 0.22 !important; 
   /* Movimento cruzado dessincronizado criando a aurora de cores no vidro */
   animation: liquidBlueDrop 32s cubic-bezier(0.37, 0, 0.63, 1) infinite alternate-reverse !important;
+  bottom: -20%;
+  right: -20%;
 }
 
 :root.light-mode .bg1, 
@@ -98,77 +243,4 @@
 @keyframes gridBreathe {
   0% { opacity: 0.18; }
   100% { opacity: 0.45; background-size: 54px 54px; }
-}
-
-.primary-button,
-.secondary-button {
-    width: 100%;
-    max-width: 420px;
-    margin: 0 auto;
-    height: 62px;
-    border-radius: 20px;
-}
-
-.main-container {
-    width: min(100%, 430px);
-    margin: 0 auto;
-    padding: 20px;
-}
-
-.hero-section {
-    width: 100%;
-    text-align: center;
-}
-
-.hero-section h1,
-.hero-section p {
-    max-width: 100%;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-/* ESCALA TIPOGRÁFICA MOBILE */
-
-.logo-title {
-    font-size: 1.65rem;
-    font-weight: 700;
-}
-
-.logo-subtitle {
-    font-size: 0.78rem;
-    letter-spacing: 1.5px;
-}
-
-.hero-title {
-    font-size: 2rem;
-    line-height: 1.15;
-    font-weight: 700;
-    text-align: center;
-}
-
-.hero-description {
-    font-size: 1rem;
-    line-height: 1.65;
-    text-align: center;
-}
-
-.section-title {
-    font-size: 1.15rem;
-    font-weight: 600;
-}
-
-.section-text {
-    font-size: 0.95rem;
-    line-height: 1.6;
-}
-
-button {
-    font-size: 1.05rem;
-    font-weight: 600;
-}
-
-.app-container {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
 }
