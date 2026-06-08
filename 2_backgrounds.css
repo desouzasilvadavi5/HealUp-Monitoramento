@@ -244,3 +244,62 @@ body.light-mode-active {
   0% { opacity: 0.18; }
   100% { opacity: 0.45; background-size: 54px 54px; }
 }
+
+/* =====================================================
+   ADAPTAÇÃO COMPATÍVEL PARA COMPUTADOR (TELAS LARGAS)
+===================================================== */
+@media stroke, screen and (min-width: 1024px) {
+    
+    /* Expande a largura máxima para preencher melhor o espaço horizontal */
+    .home-container {
+        max-width: 900px;
+        padding: 60px 48px;
+        display: grid;
+        /* Cria uma grade: o logo ocupa o topo inteiro, os textos a esquerda e os botões a direita */
+        grid-template-areas: 
+            "header header"
+            "main   buttons";
+        grid-template-columns: 1.2fr 1fr; /* Esquerda levemente maior para os textos */
+        column-gap: 64px; /* Espaço elegante separando os dois lados */
+        row-gap: 32px;
+        text-align: left; /* Alinhamento sofisticado à esquerda para computadores */
+        align-items: center;
+    }
+
+    /* Posiciona o Header ocupando toda a largura superior */
+    .home-container > header {
+        grid-area: header;
+    }
+
+    .header-logo {
+        margin: 0; /* Remove travas de centralização do mobile */
+    }
+
+    /* Posiciona a área de textos no lado esquerdo */
+    .home-container > main {
+        grid-area: main;
+    }
+
+    .main-title {
+        font-size: 2.75rem; /* Título ganha mais imponência no desktop */
+        margin-bottom: 16px;
+    }
+
+    .description-text {
+        font-size: 1.15rem;
+        max-width: 100%; /* Permite que o texto flua melhor na coluna */
+        margin: 0;
+    }
+
+    /* Posiciona o bloco de botões no lado direito */
+    .button-group {
+        grid-area: buttons;
+        max-width: 100%; /* Deixa o container ocupar toda a sua coluna dedicada */
+        gap: 16px;
+    }
+    
+    .btn {
+        padding: 16px 28px; /* Botões ligeiramente mais robustos para o clique com o mouse */
+    }
+}
+

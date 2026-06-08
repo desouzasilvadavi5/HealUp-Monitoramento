@@ -100,6 +100,253 @@ document.getElementById('btnCalculateProfessional').onclick = function() {
     return;
   }
 
+// ===========================================================================
+// SISTEMA DE NARRAÇÃO INTELIGENTE E SÍNTESE CLÍNICA TRISSISTÊMICA (A, B, C)
+// ===========================================================================
+let narracaoAtiva = false;
+
+const MedicalVoiceAssistant = {
+  falar(texto) {
+    if (!window.speechSynthesis) {
+      alert("Seu navegador não suporta leitura por voz.");
+      return;
+    }
+
+    speechSynthesis.cancel();
+
+    const fala = new SpeechSynthesisUtterance(texto);
+    fala.rate = 1.08; // Velocidade ligeiramente ajustada para melhor clareza médica
+    fala.pitch = 1.0;
+    fala.volume = 1;
+
+    const vozes = speechSynthesis.getVoices();
+    const voz =
+      vozes.find(v => v.name.includes("Microsoft Antonio")) ||
+      vozes.find(v => v.name.includes("Antonio")) ||
+      vozes.find(v => v.name.includes("Daniel")) ||
+      vozes.find(v => v.name.includes("Google português do Brasil")) ||
+      vozes.find(v => v.lang === "pt-BR") ||
+      vozes[0];
+
+    if (voz) fala.voice = voz;
+
+    // Higienização de strings e pontuações para pausas naturais da IA
+    fala.text = fala.text
+      .replace(/\./g, ". ")
+      .replace(/,/g, ", ")
+      .replace(/:/g, ": ")
+      .replace(/\//g, " por ")
+      .replace(/⚠️/g, "")
+      .replace(/\s+/g, " ");
+
+    fala.onend = () => {
+      narracaoAtiva = false;
+      const btn = document.getElementById("btnNarrarLaudo");
+      if (btn) {
+        btn.classList.remove("voice-active");
+        const iconePlay = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>`;
+        btn.innerHTML = `${iconePlay} <span>Ouvir Laudo Interativo</span>`;
+      }
+    };
+
+    speechSynthesis.speak(fala);
+  },
+
+  narrarLaudo() {
+    const relatorio = document.querySelector(".clinical-report");
+    if (!relatorio) {
+      this.falar("Relatório clínico não encontrado na tela para leitura.");
+      return;
+    }
+
+    // Inicialização do roteiro de fala estruturado
+    let textoDeNarracao = `Iniciando leitura integrada do laudo laboratorial e antropométrico. `;
+    
+    // Variáveis para compilar a síntese clínica posterior
+    let alertasCriticosCount = 0;
+    let alertasModeradosCount = 0;
+    let blocosLidosValidos = [];
+
+    // Capturar todas as seções geradas
+    const secoes = relatorio.querySelectorAll(".report-section");
+
+    secoes.forEach((secao) => {
+      const tituloElemento = secao.querySelector("h4");
+      if (!tituloElemento) return;
+
+      const tituloTexto = tituloElemento.innerText;
+      
+      // Verifica se o bloco está vazio/não preenchido
+      const textoVazio = secao.innerText.includes("Dados não preenchidos");
+
+      if (tituloTexto.includes("1.") || tituloTexto.includes("Chassi")) {
+        textoDeNarracao += "Análise do Bloco A: Chassi e Hemodinâmica. ";
+        if (textoVazio) {
+          textoDeNarracao += "Dados antropométricos e hemodinâmicos não foram fornecidos. ";
+        } else {
+          blocosLidosValidos.push("Hemodinâmico (Bloco A)");
+          textoDeNarracao += this.extrairItensDeBloco(secao);
+        }
+      } 
+      
+      else if (tituloTexto.includes("2.") || tituloTexto.includes("Perfil Glicêmico")) {
+        textoDeNarracao += "Análise do Bloco B: Perfil Glicêmico e Lipídico. ";
+        if (textoVazio) {
+          textoDeNarracao += "Dados do perfil glicêmico e lipídico não preenchidos. ";
+        } else {
+          blocosLidosValidos.push("Metabólico (Bloco B)");
+          textoDeNarracao += this.extrairItensDeBloco(secao);
+        }
+      } 
+      
+      else if (tituloTexto.includes("3.") || tituloTexto.includes("Função renal")) {
+        textoDeNarracao += "Análise do Bloco C: Função Renal, Hepática e Eletrolítica. ";
+        if (textoVazio) {
+          textoDeNarracao += "Dados das Funçôes renal, hepática e eletrolítica não informados. ";
+        } else {
+          blocosLidosValidos.push("Fisiológico Avançado (Bloco C)");
+          textoDeNarracao += this.extrairItensDeBloco(secao);
+        }
+      }
+
+      // Mapeamento interno de gravidade baseado em cores injetadas dinamicamente
+      const spansColoridos = secao.querySelectorAll("span[style*='color']");
+      spansColoridos.forEach(span => {
+        const cor = span.style.color.toLowerCase();
+        if (cor === "rgb(255, 0, 0)" || cor === "#ff0000" || cor === "#ff4d4d" || cor === "rgb(255, 77, 77)") {
+          alertasCriticosCount++;
+        } else if (cor === "#ffa500" || cor === "rgb(255, 165, 0)" || cor === "#ff7a00") {
+          alertasModeradosCount++;
+        }
+      });
+    });
+
+    // Inclusão da caixa de Condutas Clínicas na narração primária
+    const condutaBox = relatorio.querySelector(".conduta-box");
+    if (condutaBox) {
+      textoDeNarracao += " Diretrizes e condutas sugeridas: ";
+      const itensConduta = condutaBox.querySelectorAll("p, li");
+      itensConduta.forEach(item => {
+        textoDeNarracao += item.innerText + ". ";
+      });
+    }
+
+    // ===========================================================================
+    // CONSTRUÇÃO DA SÍNTESE INTELIGENTE (PÓS-LAUDO)
+    // ===========================================================================
+    textoDeNarracao += " Proferindo agora a síntese interpretativa do assistente digital. ";
+
+    if (blocosLidosValidos.length === 0) {
+      textoDeNarracao += "Aviso: Nenhum dos três blocos principais possuía dados suficientes para traçar um perfil clínico unificado.";
+    } else {
+      textoDeNarracao += `Esta avaliação sintetizou com sucesso os sistemas: ${blocosLidosValidos.join(" e ")}. `;
+      
+      if (alertasCriticosCount > 0) {
+        textoDeNarracao += `Atenção prioritária! Foram detectados ${alertasCriticosCount} biomarcadores em nível crítico ou severo. Isso exige correlação imediata com a clínica do paciente e, potencialmente, suporte de urgência ou consulta especializada urgente. `;
+      } else if (alertasModeradosCount > 0) {
+        textoDeNarracao += `Quadro de monitoramento ativo. Foram identificados ${alertasModeradosCount} pontos de desvio moderado ou pré-clínico. Recomenda-se intervenção precoce no estilo de vida e reavaliação laboratorial em curto prazo. `;
+      } else {
+        textoDeNarracao += "Excelente estabilidade biológica identificada. Os parâmetros analisados encontram-se dentro das metas ideais ou zonas de segurança. Mantida a vigilância preventiva anual. ";
+      }
+    }
+
+    textoDeNarracao += " Fim do relatório de voz. Este resultado possui caráter puramente educativo e não substitui de forma alguma o parecer e a consulta de um médico especialista.";
+
+    this.falar(textoDeNarracao);
+  },
+
+  // Função auxiliar para parsear e organizar a leitura limpa dos sub-itens de cada bloco
+  extrairItensDeBloco(secao) {
+    let subTexto = "";
+    const itens = secao.querySelectorAll(".report-item");
+    
+    if (itens.length > 0) {
+      itens.forEach(item => {
+        const spans = item.querySelectorAll("span");
+        if (spans.length >= 2) {
+          // Conecta o rótulo (ex: "Status IMC:") com o valor (ex: "28 - Sobrepeso") de forma natural
+          subTexto += `${spans[0].innerText} ${spans[1].innerText}. `;
+        } else if (spans.length === 1) {
+          subTexto += `${spans[0].innerText}. `;
+        }
+      });
+    } else {
+      // Caso o bloco use parágrafos em vez de estruturas .report-item
+      const paragrafos = secao.querySelectorAll("p");
+      paragrafos.forEach(p => {
+        if (!p.innerText.includes("Dados não preenchidos")) {
+          subTexto += p.innerText + ". ";
+        }
+      });
+    }
+    return subTexto;
+  },
+
+  criarBotao() {
+    // 1. Procura o contêiner na página 
+    let extra = document.getElementById("professionalExtraContent");
+    
+    // CORREÇÃO DE SEGURANÇA: Se não achar pelo ID, tenta achar por classe comum ou cria um fallback no final do relatório
+    if (!extra) {
+      extra = document.querySelector(".clinical-report") || document.body;
+      console.warn("Aviso: '#professionalExtraContent' não foi encontrado. O botão foi injetado no escopo alternativo.");
+    }
+    
+    // Evita duplicidade
+    if (document.getElementById("btnNarrarLaudo")) return;
+
+    const iconePlay = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+      </svg>`;
+
+    const iconeStop = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
+        <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+      </svg>`;
+
+    const btn = document.createElement("button");
+    btn.id = "btnNarrarLaudo";
+    btn.className = "primary-btn";
+    btn.innerHTML = `${iconePlay} <span>Ouvir Laudo</span>`;
+    
+    btn.style.margin = "24px 0";
+    btn.style.width = "100%";
+    btn.style.display = "block"; // Garante visibilidade estrutural
+
+    btn.onclick = () => {
+      if (speechSynthesis.speaking) {
+        speechSynthesis.cancel();
+        narracaoAtiva = false;
+        btn.classList.remove("voice-active");
+        btn.innerHTML = `${iconePlay} <span>Ouvir Laudo</span>`;
+        return;
+      }
+
+      narracaoAtiva = true;
+      btn.classList.add("voice-active");
+      btn.innerHTML = `${iconeStop} <span>Parar Narração</span>`;
+      MedicalVoiceAssistant.narrarLaudo();
+    };
+
+    extra.appendChild(btn);
+  }
+};
+
+function encerrarSistema() {
+  speechSynthesis.cancel();
+  narracaoAtiva = false;
+  location.reload();
+}
+
+
   // Arrays de acúmulo clínico global
   let hipoteses = [];
   let condutasLista = [];
@@ -226,7 +473,7 @@ document.getElementById('btnCalculateProfessional').onclick = function() {
   // ===========================================================================
   let htmlBlocoB = `
   <div class="report-section">
-    <h4>2. Qualidade do Combustível e Lubrificantes (Perfil Glicêmico e Lipídico)</h4>
+    <h4>2. Perfil Glicêmico e Lipídico </h4>
     <p style="color:#ffa500; font-style:italic; padding: 5px 0; margin: 5px 0;">⚠️ Dados não preenchidos para este bloco.</p>
   </div>`;
 
@@ -398,7 +645,7 @@ document.getElementById('btnCalculateProfessional').onclick = function() {
 
     htmlBlocoB = `
       <div class="report-section">
-        <h4>2. Qualidade do Combustível e Lubrificantes (Perfil Glicêmico e Lipídico)</h4>
+        <h4>2. Perfil Glicêmico e Lipídico</h4>
         <div class="report-item">
           <span>Controle Glicêmico:</span>
           <span style="color:${glicColor}">${glicStatus}</span>
@@ -752,6 +999,7 @@ extra.innerHTML = `
       ${typeof htmlBlocoA !== 'undefined' ? htmlBlocoA : ""}
       ${typeof htmlBlocoB !== 'undefined' ? htmlBlocoB : ""}
       ${typeof htmlBlocoC !== 'undefined' ? htmlBlocoC : ""}
+      
 
       <div class="report-section">
         <h4>4. Possíveis Doenças e Hipóteses Clínicas Ativas</h4>
@@ -768,4 +1016,11 @@ extra.innerHTML = `
       </div>
     </div>
 `;
+// FORCE A CRIAÇÃO APÓS A RENDERIZAÇÃO DO LAUDO
+setTimeout(() => {
+  if (typeof MedicalVoiceAssistant !== 'undefined' && MedicalVoiceAssistant.criarBotao) {
+    MedicalVoiceAssistant.criarBotao();
+  }
+}, 100);
 };
+
